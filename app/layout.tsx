@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   title: "KASIR — Not just clothing. Identity.",
   description: "Premium minimalist streetwear. No noise. No trends. Just statement.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

@@ -18,6 +18,11 @@ export function RevealOverlay({ children }: RevealOverlayProps) {
   const [isDragging, setIsDragging] = useState(false);
   const gestureEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const windowHeightRef = useRef(0);
+  
+  // Touch gesture tracking for mobile
+  const touchStartYRef = useRef(0);
+  const touchCurrentYRef = useRef(0);
+  const touchStartTimeRef = useRef(0);
 
   // Check sessionStorage after mount to avoid hydration mismatch
   useEffect(() => {
@@ -114,7 +119,7 @@ export function RevealOverlay({ children }: RevealOverlayProps) {
     }, GESTURE_END_DELAY);
   }, [dragOffset]);
 
-  // Handle wheel events for gesture tracking
+  // Handle wheel events for gesture tracking (desktop)
   useEffect(() => {
     if (isRevealed) return;
 
@@ -139,6 +144,74 @@ export function RevealOverlay({ children }: RevealOverlayProps) {
       }
     };
   }, [isRevealed, dragOffset, handleGestureEnd]);
+
+  // Handle touch events for mobile swipe-up gesture
+  useEffect(() => {
+    if (isRevealed) return;
+
+    function handleTouchStart(e: TouchEvent) {
+      if (e.touches.length !== 1) return;
+      touchStartYRef.current = e.touches[0].clientY;
+      touchCurrentYRef.current = e.touches[0].clientY;
+      touchStartTimeRef.current = Date.now();
+      setIsDragging(true);
+    }
+
+    function handleTouchMove(e: TouchEvent) {
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      
+      touchCurrentYRef.current = e.touches[0].clientY;
+      const deltaY = touchStartYRef.current - touchCurrentYRef.current; // Positive = swipe up
+      
+      if (deltaY > 0) {
+        // Swiping up - move overlay directly based on swipe distance
+        const newOffset = Math.min(0, -deltaY * 0.9); // Direct mapping for responsive feel
+        dragOffset.set(newOffset);
+      }
+    }
+
+    function handleTouchEnd(e: TouchEvent) {
+      setIsDragging(false);
+      
+      const deltaY = touchStartYRef.current - touchCurrentYRef.current;
+      const deltaTime = Date.now() - touchStartTimeRef.current;
+      const swipeDistance = Math.abs(deltaY);
+      const swipeSpeed = deltaTime > 0 ? swipeDistance / deltaTime : 0;
+      
+      const currentOffset = dragOffset.get();
+      const threshold = -windowHeightRef.current * OPEN_THRESHOLD;
+      
+      // Check if it's a valid swipe-up gesture
+      // Open if: dragged past threshold OR swipe distance > 100px OR fast swipe (speed > 0.4 px/ms)
+      if (deltaY > 0 && (currentOffset <= threshold || swipeDistance > 100 || swipeSpeed > 0.4)) {
+        scrollContainerToTop();
+        dragOffset.set(-windowHeightRef.current);
+        setTimeout(() => {
+          setIsRevealed(true);
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(INTRO_SEEN_KEY, "true");
+          }
+        }, 400);
+      } else {
+        // Not enough swipe - snap back
+        dragOffset.set(0);
+      }
+    }
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+    
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+      if (gestureEndTimeoutRef.current) {
+        clearTimeout(gestureEndTimeoutRef.current);
+      }
+    };
+  }, [isRevealed, dragOffset, scrollContainerToTop]);
 
   // Handle Escape key to toggle
   useEffect(() => {
