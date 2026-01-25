@@ -413,8 +413,10 @@ export default function Home() {
             <div className="flex flex-col gap-2 text-sm text-white/60 md:items-end">
               <a
                 className="transition-colors hover:text-white"
-                href="#"
-              >
+                href="https://www.instagram.com/kasir_official?igsh=NTc4MTIwNjQ2YQ%3D%3D&utm_source=qr"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
                 Instagram
           </a>
           <a
