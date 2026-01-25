@@ -16,6 +16,7 @@ export function RevealOverlay({ children }: RevealOverlayProps) {
   // Start with false to match server-side rendering
   const [isRevealed, setIsRevealed] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [hintAnimationEnabled, setHintAnimationEnabled] = useState(true);
   const gestureEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const windowHeightRef = useRef(0);
   
@@ -126,6 +127,7 @@ export function RevealOverlay({ children }: RevealOverlayProps) {
     function handleWheel(e: WheelEvent) {
       e.preventDefault();
       setIsDragging(true);
+      setHintAnimationEnabled(false); // Stop hint animation on interaction
 
       // Accumulate drag offset (negative = up, positive = down)
       const currentOffset = dragOffset.get();
@@ -155,6 +157,7 @@ export function RevealOverlay({ children }: RevealOverlayProps) {
       touchCurrentYRef.current = e.touches[0].clientY;
       touchStartTimeRef.current = Date.now();
       setIsDragging(true);
+      setHintAnimationEnabled(false); // Stop hint animation on interaction
     }
 
     function handleTouchMove(e: TouchEvent) {
@@ -235,19 +238,6 @@ export function RevealOverlay({ children }: RevealOverlayProps) {
     return () => window.removeEventListener("keydown", handleEscape);
   }, [isRevealed, dragOffset, scrollContainerToTop]);
 
-  // Handle Enter button - spring open
-  const handleEnter = useCallback(() => {
-    // Scroll container to top BEFORE opening (while overlay still visible)
-    scrollContainerToTop();
-    dragOffset.set(-windowHeightRef.current);
-    // Wait for spring animation to complete
-    setTimeout(() => {
-      setIsRevealed(true);
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem(INTRO_SEEN_KEY, "true");
-      }
-    }, 400);
-  }, [dragOffset, scrollContainerToTop]);
 
 
   return (
@@ -260,6 +250,7 @@ export function RevealOverlay({ children }: RevealOverlayProps) {
               backdropFilter: blurString,
             }}
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95"
+            onClick={() => setHintAnimationEnabled(false)}
           >
             {/* Subtle gradient/noise overlay */}
             <div
@@ -275,6 +266,21 @@ export function RevealOverlay({ children }: RevealOverlayProps) {
                 opacity: contentOpacity,
               }}
               className="relative z-10 flex flex-col items-center gap-6 text-center"
+              animate={
+                hintAnimationEnabled && !isDragging
+                  ? {
+                      y: [0, -15, 0],
+                    }
+                  : {
+                      y: 0,
+                    }
+              }
+              transition={{
+                duration: 2.5,
+                ease: "easeInOut",
+                repeat: hintAnimationEnabled && !isDragging ? Infinity : 0,
+                repeatDelay: 1.5,
+              }}
             >
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
@@ -293,17 +299,17 @@ export function RevealOverlay({ children }: RevealOverlayProps) {
               >
                 Scroll to enter
               </motion.p>
-
-              <motion.button
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}
-                onClick={handleEnter}
-                className="mt-4 inline-flex h-12 items-center justify-center rounded-full border border-white/30 bg-white/5 px-8 text-sm font-medium tracking-wide text-white transition hover:border-white/50 hover:bg-white/10"
-              >
-                Enter
-              </motion.button>
             </motion.div>
+
+            {/* Subtle swipe hint text at bottom */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: hintAnimationEnabled && !isDragging ? 0.5 : 0 }}
+              transition={{ duration: 1.5, delay: 2 }}
+              className="absolute bottom-12 left-1/2 -translate-x-1/2 text-xs tracking-[0.2em] text-white/50 md:text-sm"
+            >
+              SWIPE UP
+            </motion.p>
           </motion.div>
         )}
       </AnimatePresence>
