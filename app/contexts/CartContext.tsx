@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { logError } from "@/lib/logger";
 
 export type CartItem = {
   id: string;
@@ -37,7 +38,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setItems(JSON.parse(stored));
       }
     } catch (error) {
-      console.error("Failed to load cart from localStorage:", error);
+      logError("[cart] Failed to load cart from localStorage", error);
     }
     setIsHydrated(true);
   }, []);
@@ -48,7 +49,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       try {
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
       } catch (error) {
-        console.error("Failed to save cart to localStorage:", error);
+        logError("[cart] Failed to save cart to localStorage", error);
       }
     }
   }, [items, isHydrated]);

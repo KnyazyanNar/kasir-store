@@ -12,7 +12,6 @@ export default function NewProductPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [imageUrl, setImageUrl] = useState("");
 
@@ -50,9 +49,8 @@ export default function NewProductPage() {
 
       const result = await createProduct({
         name,
-        description: description || undefined,
         price: priceInCents,
-        image_url: imageUrl || undefined,
+        images: imageUrl ? [imageUrl] : undefined,
       });
 
       if (result.error) {
@@ -99,20 +97,6 @@ export default function NewProductPage() {
               required
               className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-white/30 transition-colors"
               placeholder="KASIR Gothic Tee"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-white/70 mb-2">
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-white/30 transition-colors resize-none"
-              placeholder="Premium quality gothic t-shirt..."
             />
           </div>
 

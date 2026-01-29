@@ -3,12 +3,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useCart } from "../contexts/CartContext";
 import { Toast } from "./Toast";
 import { FadeIn } from "./FadeIn";
-import type { ProductWithVariants } from "@/lib/types/product";
-import { AVAILABLE_SIZES, type Size } from "@/lib/types/product";
+import { FullscreenViewer } from "./ProductCard";
+import type { ProductWithVariants } from "@/lib/data/getProducts";
+
+const AVAILABLE_SIZES = ["S", "M", "L", "XL"] as const;
+type Size = (typeof AVAILABLE_SIZES)[number];
 
 type ProductSectionProps = {
   product: ProductWithVariants;
@@ -20,7 +23,13 @@ export function ProductSection({ product }: ProductSectionProps) {
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { addItem } = useCart();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Get stock for a given size
   const getStockForSize = (s: string): number => {
@@ -33,11 +42,10 @@ export function ProductSection({ product }: ProductSectionProps) {
     return getStockForSize(s) === 0;
   };
 
-  // Product images - use image_url if available, otherwise fallback to defaults
+  // Product images - use images array, fallback to defaults
   const productImages = useMemo(() => {
-    if (product.image_url) {
-      // If product has an image, use it. Could extend to support multiple images later.
-      return [product.image_url];
+    if (product.images && product.images.length > 0) {
+      return product.images;
     }
     // Fallback to default images
     return [
@@ -46,7 +54,25 @@ export function ProductSection({ product }: ProductSectionProps) {
       "/shirt-quality.png",
       "/shirt-print.png",
     ];
-  }, [product.image_url]);
+  }, [product.images]);
+
+  const goToIndex = useCallback(
+    (index: number) => {
+      setSelectedImageIndex(index);
+    },
+    []
+  );
+
+  const selectedStock = getStockForSize(size);
+
+  // Reset quantity when size changes if it exceeds available stock
+  useEffect(() => {
+    const stock = getStockForSize(size);
+    if (stock > 0 && quantity > stock) {
+      setQuantity(stock);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [size]);
 
   const handleAddToCart = () => {
     if (isOutOfStock(size)) {
@@ -55,6 +81,7 @@ export function ProductSection({ product }: ProductSectionProps) {
       setTimeout(() => setShowToast(false), 2500);
       return;
     }
+    if (quantity > selectedStock) return;
 
     addItem({
       id: product.id,
@@ -83,10 +110,6 @@ export function ProductSection({ product }: ProductSectionProps) {
               <p className="mt-4 text-lg text-white/70">
                 ${(product.price / 100).toFixed(0)}
               </p>
-
-              {product.description && (
-                <p className="mt-4 text-sm text-white/50">{product.description}</p>
-              )}
 
               <div className="mt-10">
                 <p className="text-sm tracking-wide text-white/60">SIZE</p>
@@ -123,13 +146,16 @@ export function ProductSection({ product }: ProductSectionProps) {
                 </div>
                 <p className="mt-4 text-sm text-white/50">
                   Selected size: <span className="text-white/80">{size}</span>
-                  {isOutOfStock(size) && (
-                    <span className="ml-2 text-red-400">(Out of stock)</span>
-                  )}
-                  {!isOutOfStock(size) && getStockForSize(size) <= 5 && (
-                    <span className="ml-2 text-yellow-400">
-                      (Only {getStockForSize(size)} left)
+                </p>
+                <p className="mt-1 text-sm min-h-[1.25rem]">
+                  {isOutOfStock(size) ? (
+                    <span className="text-red-400">Out of stock</span>
+                  ) : getStockForSize(size) <= 5 ? (
+                    <span className="text-yellow-400">
+                      Only {getStockForSize(size)} left
                     </span>
+                  ) : (
+                    <span className="invisible">&#8203;</span>
                   )}
                 </p>
               </div>
@@ -140,7 +166,8 @@ export function ProductSection({ product }: ProductSectionProps) {
                   <button
                     type="button"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="h-10 w-10 rounded-full border border-white/20 text-white transition hover:border-white/40"
+                    disabled={quantity <= 1}
+                    className="h-10 w-10 rounded-full border border-white/20 text-white transition hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed"
                     aria-label="Decrease quantity"
                   >
                     −
@@ -150,8 +177,9 @@ export function ProductSection({ product }: ProductSectionProps) {
                   </span>
                   <button
                     type="button"
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="h-10 w-10 rounded-full border border-white/20 text-white transition hover:border-white/40"
+                    onClick={() => setQuantity(Math.min(quantity + 1, selectedStock))}
+                    disabled={quantity >= selectedStock}
+                    className="h-10 w-10 rounded-full border border-white/20 text-white transition hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed"
                     aria-label="Increase quantity"
                   >
                     +
@@ -159,14 +187,14 @@ export function ProductSection({ product }: ProductSectionProps) {
                 </div>
               </div>
 
-              <div className="mt-10 max-w-sm space-y-3">
+              <div className="mt-10 max-w-sm mx-auto md:mx-0 space-y-3">
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  disabled={isOutOfStock(size)}
+                  disabled={isOutOfStock(size) || quantity > selectedStock}
                   className={[
                     "inline-flex h-12 w-full items-center justify-center rounded-full transition",
-                    isOutOfStock(size)
+                    isOutOfStock(size) || quantity > selectedStock
                       ? "bg-white/20 text-white/50 cursor-not-allowed"
                       : "bg-white text-black hover:bg-white/90",
                   ].join(" ")}
@@ -187,11 +215,12 @@ export function ProductSection({ product }: ProductSectionProps) {
 
             <div className="order-1 md:order-2">
               <div
-                className="relative aspect-[4/5] overflow-hidden rounded-3xl"
+                className="relative aspect-[4/5] overflow-hidden rounded-3xl cursor-pointer"
                 style={{
                   boxShadow:
                     "inset 0 0 60px rgba(0, 0, 0, 0.4), inset 0 0 120px rgba(0, 0, 0, 0.2)",
                 }}
+                onClick={() => setIsFullscreen(true)}
               >
                 {/* Dark gradient edges */}
                 <div className="absolute inset-0 z-10 pointer-events-none">
@@ -292,6 +321,19 @@ export function ProductSection({ product }: ProductSectionProps) {
                   })}
                 </div>
               )}
+
+              {/* Fullscreen Viewer */}
+              <AnimatePresence>
+                {isMounted && isFullscreen && (
+                  <FullscreenViewer
+                    images={productImages}
+                    currentIndex={selectedImageIndex}
+                    onClose={() => setIsFullscreen(false)}
+                    onIndexChange={goToIndex}
+                    productName={product.name}
+                  />
+                )}
+              </AnimatePresence>
             </div>
           </FadeIn>
         </div>

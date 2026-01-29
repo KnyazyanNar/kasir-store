@@ -26,10 +26,17 @@ export default function CartPage() {
       setLoading(true);
       setError(null);
 
+      // Send only product_id, size, quantity - NOT prices (server validates prices)
+      const checkoutItems = items.map((item) => ({
+        product_id: item.id,
+        size: item.size,
+        quantity: item.quantity,
+      }));
+
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items: checkoutItems }),
       });
 
       if (!res.ok) {
@@ -89,10 +96,10 @@ export default function CartPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.3 }}
-                    className="flex gap-6 border-b border-white/10 pb-6"
+                    className="relative flex gap-4 md:gap-6 border-b border-white/10 pb-6"
                   >
                     {/* Product Image */}
-                    <div className="relative h-32 w-32 flex-shrink-0 overflow-hidden rounded-lg">
+                    <div className="relative h-24 w-24 md:h-32 md:w-32 flex-shrink-0 overflow-hidden rounded-lg">
                       <Image
                         src={item.image}
                         alt={item.name}
@@ -102,20 +109,20 @@ export default function CartPage() {
                     </div>
 
                     {/* Product Info */}
-                    <div className="flex flex-1 flex-col justify-between">
+                    <div className="flex flex-1 flex-col justify-between pr-8 md:pr-0">
                       <div>
-                        <h3 className="text-lg font-medium">{item.name}</h3>
-                        <p className="mt-2 text-sm font-medium text-white/80">
+                        <h3 className="text-base md:text-lg font-medium">{item.name}</h3>
+                        <p className="mt-1 md:mt-2 text-sm font-medium text-white/80">
                           Size {item.size}
                         </p>
-                        <p className="mt-2 text-lg font-medium">
+                        <p className="mt-1 md:mt-2 text-base md:text-lg font-medium">
                           {formatPrice(item.price)}
                         </p>
                       </div>
 
                       {/* Quantity Controls */}
-                      <div className="mt-4 flex items-center gap-4">
-                        <span className="text-sm text-white/60">Quantity:</span>
+                      <div className="mt-3 md:mt-4 flex items-center gap-3 md:gap-4">
+                        <span className="hidden md:inline text-sm text-white/60">Quantity:</span>
                         <div className="flex items-center gap-3">
                           <button
                             type="button"
@@ -144,14 +151,30 @@ export default function CartPage() {
                       </div>
                     </div>
 
-                    {/* Remove Button */}
+                    {/* Remove Button — trash icon on mobile, text on desktop */}
                     <button
                       type="button"
                       onClick={() => removeItem(item.id, item.size)}
-                      className="self-start text-sm text-white/40 transition hover:text-white/70"
+                      className="absolute top-0 right-0 md:relative md:top-auto md:right-auto md:self-start flex items-center justify-center w-10 h-10 md:w-auto md:h-auto rounded-full md:rounded-none text-white/40 transition hover:text-white/70"
                       aria-label="Remove item"
                     >
-                      Remove
+                      {/* Trash icon — mobile only */}
+                      <svg
+                        className="md:hidden w-5 h-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        <line x1="10" y1="11" x2="10" y2="17" />
+                        <line x1="14" y1="11" x2="14" y2="17" />
+                      </svg>
+                      {/* Text — desktop only */}
+                      <span className="hidden md:inline text-sm">Remove</span>
                     </button>
                   </motion.div>
                 ))}

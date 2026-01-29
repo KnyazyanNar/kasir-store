@@ -1,91 +1,87 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin-client";
-import type { Product, ProductVariant, ProductImage, ProductWithVariants } from "@/lib/types/product";
+import { db } from "@/lib/firebase-admin";
+import { logError } from "@/lib/logger";
+import type { Product, ProductVariant, ProductWithVariants } from "./getProducts";
 
 /**
- * Fetch a single product by ID with its variants and images (for admin).
- * Uses admin client (bypasses RLS).
+ * Fetch variants for a product from product_variants collection.
  */
-export async function getProductById(id: string): Promise<ProductWithVariants | null> {
-  const supabase = createSupabaseAdminClient();
+async function getProductVariants(productId: string): Promise<ProductVariant[]> {
+  try {
+    const snapshot = await db
+      .collection("product_variants")
+      .where("product_id", "==", productId)
+      .get();
 
-  // Fetch product from products table
-  const { data: product, error: productError } = await supabase
-    .from("products")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (productError || !product) {
-    console.error("Error fetching product:", productError);
-    return null;
+    return snapshot.docs.map((doc) => ({
+      size: doc.data().size,
+      stock: doc.data().stock || 0,
+    }));
+  } catch (error) {
+    logError(`[products] Failed to fetch variants for product ${productId}`, error);
+    return [];
   }
+}
 
-  // Fetch variants from product_variants table
-  const { data: variants, error: variantsError } = await supabase
-    .from("product_variants")
-    .select("*")
-    .eq("product_id", id)
-    .order("size");
+/**
+ * Convert Firestore document to Product type.
+ */
+function docToProduct(doc: FirebaseFirestore.DocumentSnapshot): Product | null {
+  if (!doc.exists) return null;
 
-  if (variantsError) {
-    console.error("Error fetching variants:", variantsError);
-  }
-
-  // Fetch images from product_images table
-  const { data: images, error: imagesError } = await supabase
-    .from("product_images")
-    .select("*")
-    .eq("product_id", id)
-    .order("position", { ascending: true });
-
-  if (imagesError) {
-    console.error("Error fetching images:", imagesError);
-  }
+  const data = doc.data();
+  if (!data) return null;
 
   return {
-    ...(product as Product),
-    variants: (variants as ProductVariant[]) || [],
-    images: (images as ProductImage[]) || [],
+    id: doc.id,
+    name: data.name,
+    price: data.price,
+    images: data.images || [],
+    is_active: data.is_active,
   };
 }
 
 /**
- * Fetch a single active product by ID with its variants and images (for storefront).
- * Uses regular client (respects RLS).
+ * Fetch a single product by ID with its variants (for admin).
  */
-export async function getActiveProductById(id: string): Promise<ProductWithVariants | null> {
-  const supabase = await createSupabaseServerClient();
+export async function getProductById(id: string): Promise<ProductWithVariants | null> {
+  try {
+    const productRef = db.collection("products").doc(id);
+    const productDoc = await productRef.get();
 
-  // Fetch active product only
-  const { data: product, error: productError } = await supabase
-    .from("products")
-    .select("*")
-    .eq("id", id)
-    .eq("is_active", true)
-    .single();
+    const product = docToProduct(productDoc);
+    if (!product) return null;
 
-  if (productError || !product) {
+    const variants = await getProductVariants(id);
+
+    return {
+      ...product,
+      variants,
+    };
+  } catch (error) {
+    logError("[products] Failed to fetch product", error);
     return null;
   }
+}
 
-  // Fetch variants
-  const { data: variants } = await supabase
-    .from("product_variants")
-    .select("*")
-    .eq("product_id", id)
-    .order("size");
+/**
+ * Fetch a single active product by ID with its variants (for storefront).
+ */
+export async function getActiveProductById(id: string): Promise<ProductWithVariants | null> {
+  try {
+    const productRef = db.collection("products").doc(id);
+    const productDoc = await productRef.get();
 
-  // Fetch images
-  const { data: images } = await supabase
-    .from("product_images")
-    .select("*")
-    .eq("product_id", id)
-    .order("position", { ascending: true });
+    const product = docToProduct(productDoc);
+    if (!product || !product.is_active) return null;
 
-  return {
-    ...(product as Product),
-    variants: (variants as ProductVariant[]) || [],
-    images: (images as ProductImage[]) || [],
-  };
+    const variants = await getProductVariants(id);
+
+    return {
+      ...product,
+      variants,
+    };
+  } catch (error) {
+    logError("[products] Failed to fetch active product", error);
+    return null;
+  }
 }

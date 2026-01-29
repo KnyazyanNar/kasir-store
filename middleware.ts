@@ -1,38 +1,42 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const SESSION_START_COOKIE = "admin_session_start";
+const ADMIN_SESSION_MAX_HOURS = parseInt(
+  process.env.ADMIN_SESSION_MAX_HOURS || "24",
+  10
+);
+const ADMIN_SESSION_MAX_MS = ADMIN_SESSION_MAX_HOURS * 60 * 60 * 1000;
+
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  const { pathname } = request.nextUrl;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
+  // Fast session expiration check for admin routes only
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin-login")) {
+    const sessionCookie = request.cookies.get("session")?.value;
+    const sessionStart = request.cookies.get(SESSION_START_COOKIE)?.value;
+
+    // No session at all → redirect to login
+    if (!sessionCookie || !sessionStart) {
+      const loginUrl = new URL("/admin-login", request.url);
+      const response = NextResponse.redirect(loginUrl);
+      // Clear any stale cookies
+      response.cookies.delete("session");
+      response.cookies.delete(SESSION_START_COOKIE);
+      return response;
     }
-  );
 
-  // Refreshing the auth token
-  await supabase.auth.getUser();
+    // Session expired → redirect to login
+    const startTime = parseInt(sessionStart, 10);
+    if (isNaN(startTime) || Date.now() - startTime > ADMIN_SESSION_MAX_MS) {
+      const loginUrl = new URL("/admin-login", request.url);
+      const response = NextResponse.redirect(loginUrl);
+      response.cookies.delete("session");
+      response.cookies.delete(SESSION_START_COOKIE);
+      return response;
+    }
+  }
 
-  return supabaseResponse;
+  return NextResponse.next();
 }
 
 export const config = {
@@ -42,7 +46,6 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
      */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],

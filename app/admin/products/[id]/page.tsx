@@ -11,8 +11,9 @@ import {
   deleteProductImage,
   reorderProductImages,
 } from "@/lib/actions/products";
-import { AVAILABLE_SIZES } from "@/lib/types/product";
-import type { ProductWithVariants, ProductImage } from "@/lib/types/product";
+import type { ProductWithVariants } from "@/lib/data/getProducts";
+
+const AVAILABLE_SIZES = ["S", "M", "L", "XL"] as const;
 
 export default function EditProductPage({
   params,
@@ -30,12 +31,11 @@ export default function EditProductPage({
 
   // Form state
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  // Images state
-  const [images, setImages] = useState<ProductImage[]>([]);
+  // Images state (array of URLs)
+  const [images, setImages] = useState<string[]>([]);
 
   // Variants state
   const [stocks, setStocks] = useState<Record<string, number>>({});
@@ -50,7 +50,6 @@ export default function EditProductPage({
         const data = await res.json();
         setProduct(data);
         setName(data.name);
-        setDescription(data.description || "");
         setPrice((data.price / 100).toFixed(2));
         setIsActive(data.is_active);
         setImages(data.images || []);
@@ -89,7 +88,7 @@ export default function EditProductPage({
       if (result.error) {
         setError(result.error);
       } else if (result.data) {
-        setImages([...images, result.data as ProductImage]);
+        setImages([...images, result.data.url]);
         setSuccessMessage("Image added successfully");
         setTimeout(() => setSuccessMessage(null), 3000);
       }
@@ -97,20 +96,19 @@ export default function EditProductPage({
       setError("Failed to upload image");
     } finally {
       setIsUploadingImage(false);
-      // Reset the file input
       e.target.value = "";
     }
   }
 
-  async function handleDeleteImage(imageId: string) {
+  async function handleDeleteImage(imageUrl: string) {
     if (!confirm("Delete this image?")) return;
 
     try {
-      const result = await deleteProductImage(imageId);
+      const result = await deleteProductImage(id, imageUrl);
       if (result.error) {
         setError(result.error);
       } else {
-        setImages(images.filter((img) => img.id !== imageId));
+        setImages(images.filter((img) => img !== imageUrl));
         setSuccessMessage("Image deleted");
         setTimeout(() => setSuccessMessage(null), 3000);
       }
@@ -119,8 +117,8 @@ export default function EditProductPage({
     }
   }
 
-  async function handleMoveImage(imageId: string, direction: "up" | "down") {
-    const currentIndex = images.findIndex((img) => img.id === imageId);
+  async function handleMoveImage(imageUrl: string, direction: "up" | "down") {
+    const currentIndex = images.findIndex((img) => img === imageUrl);
     if (currentIndex === -1) return;
 
     const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
@@ -137,10 +135,7 @@ export default function EditProductPage({
 
     // Save new order to database
     try {
-      const result = await reorderProductImages(
-        id,
-        newImages.map((img) => img.id)
-      );
+      const result = await reorderProductImages(id, newImages);
       if (result.error) {
         // Revert on error
         setImages(images);
@@ -162,7 +157,6 @@ export default function EditProductPage({
 
       const result = await updateProduct(id, {
         name,
-        description: description || undefined,
         price: priceInCents,
         is_active: isActive,
       });
@@ -257,7 +251,7 @@ export default function EditProductPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div className="flex items-center gap-4">
           <Link
             href="/admin/products"
@@ -265,11 +259,11 @@ export default function EditProductPage({
           >
             &larr; Back
           </Link>
-          <h1 className="text-3xl font-bold">Edit Product</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Edit Product</h1>
         </div>
         <button
           onClick={handleDelete}
-          className="px-4 py-2 bg-red-500/10 text-red-400 rounded-lg text-sm hover:bg-red-500/20 transition-colors"
+          className="self-start sm:self-auto px-4 py-2 bg-red-500/10 text-red-400 rounded-lg text-sm hover:bg-red-500/20 transition-colors"
         >
           Delete Product
         </button>
@@ -305,19 +299,6 @@ export default function EditProductPage({
                   onChange={(e) => setName(e.target.value)}
                   required
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-white/30 transition-colors"
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-white/30 transition-colors resize-none"
                 />
               </div>
 
@@ -364,13 +345,13 @@ export default function EditProductPage({
 
             {/* Image Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
-              {images.map((img, index) => (
+              {images.map((imgUrl, index) => (
                 <div
-                  key={img.id}
+                  key={`${imgUrl}-${index}`}
                   className="relative group aspect-square rounded-xl overflow-hidden bg-white/5"
                 >
                   <img
-                    src={img.url}
+                    src={imgUrl}
                     alt={`Product image ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
@@ -387,7 +368,7 @@ export default function EditProductPage({
                     {/* Move up */}
                     {index > 0 && (
                       <button
-                        onClick={() => handleMoveImage(img.id, "up")}
+                        onClick={() => handleMoveImage(imgUrl, "up")}
                         className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-colors"
                         title="Move up"
                       >
@@ -398,7 +379,7 @@ export default function EditProductPage({
                     {/* Move down */}
                     {index < images.length - 1 && (
                       <button
-                        onClick={() => handleMoveImage(img.id, "down")}
+                        onClick={() => handleMoveImage(imgUrl, "down")}
                         className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-colors"
                         title="Move down"
                       >
@@ -408,7 +389,7 @@ export default function EditProductPage({
 
                     {/* Delete */}
                     <button
-                      onClick={() => handleDeleteImage(img.id)}
+                      onClick={() => handleDeleteImage(imgUrl)}
                       className="w-8 h-8 bg-red-500/50 hover:bg-red-500/70 rounded-full flex items-center justify-center text-white transition-colors"
                       title="Delete"
                     >
@@ -522,7 +503,7 @@ export default function EditProductPage({
             <div className="aspect-square rounded-lg bg-white/10 overflow-hidden mb-4">
               {images.length > 0 ? (
                 <img
-                  src={images[0].url}
+                  src={images[0]}
                   alt={name}
                   className="w-full h-full object-cover"
                 />

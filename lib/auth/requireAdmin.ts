@@ -1,36 +1,85 @@
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { admin } from "@/lib/firebase-admin";
+import { logError } from "@/lib/logger";
+
+const auth = admin.auth();
+
+const SESSION_COOKIE_NAME = "session";
+const SESSION_START_COOKIE = "admin_session_start";
+
+// Admin session max age in hours (configurable via env, default 24h)
+const ADMIN_SESSION_MAX_HOURS = parseInt(
+  process.env.ADMIN_SESSION_MAX_HOURS || "24",
+  10
+);
+const ADMIN_SESSION_MAX_MS = ADMIN_SESSION_MAX_HOURS * 60 * 60 * 1000;
 
 /**
- * Simple email-based admin check.
+ * Check if the admin session has expired based on the session start timestamp.
+ */
+function isSessionExpired(cookieStore: Awaited<ReturnType<typeof cookies>>): boolean {
+  const sessionStart = cookieStore.get(SESSION_START_COOKIE)?.value;
+
+  if (!sessionStart) {
+    // No session start cookie means no valid session
+    return true;
+  }
+
+  const startTime = parseInt(sessionStart, 10);
+  if (isNaN(startTime)) {
+    return true;
+  }
+
+  return Date.now() - startTime > ADMIN_SESSION_MAX_MS;
+}
+
+/**
+ * Simple email-based admin check with session expiration.
  * Compares user email against ADMIN_EMAIL env variable.
- * Redirects to /admin-login if not admin.
+ * Checks session age against ADMIN_SESSION_MAX_HOURS.
+ * Redirects to /admin-login if not admin or session expired.
  */
 export async function requireAdmin(): Promise<{ id: string; email: string }> {
-  const supabase = await createSupabaseServerClient();
   const adminEmail = process.env.ADMIN_EMAIL;
 
   if (!adminEmail) {
-    console.error("ADMIN_EMAIL environment variable is not set");
+    logError("[auth] ADMIN_EMAIL environment variable is not set");
     redirect("/admin-login");
   }
 
-  // Get current user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const cookieStore = await cookies();
 
-  if (userError || !user) {
+  // Check session age before doing Firebase verification
+  if (isSessionExpired(cookieStore)) {
+    // Clear stale cookies
+    cookieStore.delete(SESSION_COOKIE_NAME);
+    cookieStore.delete(SESSION_START_COOKIE);
     redirect("/admin-login");
   }
 
-  // Check if user email matches admin email
-  if (user.email !== adminEmail) {
+  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+  if (!sessionCookie) {
     redirect("/admin-login");
   }
 
-  return { id: user.id, email: user.email };
+  try {
+    // Verify session cookie with Firebase (checks revocation)
+    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+
+    // Check if user email matches admin email
+    if (decodedClaims.email !== adminEmail) {
+      redirect("/admin-login");
+    }
+
+    return { id: decodedClaims.uid, email: decodedClaims.email! };
+  } catch (error) {
+    logError("[auth] Session verification failed", error);
+    cookieStore.delete(SESSION_COOKIE_NAME);
+    cookieStore.delete(SESSION_START_COOKIE);
+    redirect("/admin-login");
+  }
 }
 
 /**
@@ -38,21 +87,38 @@ export async function requireAdmin(): Promise<{ id: string; email: string }> {
  * Returns user info if admin, null otherwise.
  */
 export async function checkIsAdmin(): Promise<{ id: string; email: string } | null> {
-  const supabase = await createSupabaseServerClient();
   const adminEmail = process.env.ADMIN_EMAIL;
 
   if (!adminEmail) {
-    console.error("ADMIN_EMAIL environment variable is not set");
+    logError("[auth] ADMIN_EMAIL environment variable is not set");
     return null;
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const cookieStore = await cookies();
 
-  if (!user || user.email !== adminEmail) {
+  // Check session age
+  if (isSessionExpired(cookieStore)) {
+    cookieStore.delete(SESSION_COOKIE_NAME);
+    cookieStore.delete(SESSION_START_COOKIE);
     return null;
   }
 
-  return { id: user.id, email: user.email };
+  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+  if (!sessionCookie) {
+    return null;
+  }
+
+  try {
+    // Verify session cookie with Firebase (checks revocation)
+    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+
+    if (decodedClaims.email !== adminEmail) {
+      return null;
+    }
+
+    return { id: decodedClaims.uid, email: decodedClaims.email! };
+  } catch {
+    return null;
+  }
 }

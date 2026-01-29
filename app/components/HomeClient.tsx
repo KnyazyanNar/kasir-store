@@ -7,7 +7,7 @@ import { FadeIn } from "./FadeIn";
 import { RevealOverlay } from "./RevealOverlay";
 import { ProductCard } from "./ProductCard";
 import { Toast } from "./Toast";
-import type { ProductWithVariants } from "@/lib/types/product";
+import type { ProductWithVariants } from "@/lib/data/getProducts";
 
 type HomeClientProps = {
   products: ProductWithVariants[];

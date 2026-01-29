@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getSupabaseClient } from "@/lib/supabase/client";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase-client";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -18,23 +19,42 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      const supabase = getSupabaseClient();
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Get ID token
+      const idToken = await userCredential.user.getIdToken();
+
+      // Create session cookie via API
+      const res = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
       });
 
-      if (signInError) {
-        setError(signInError.message);
-        return;
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to create session");
       }
 
       // Redirect to admin dashboard
       router.push("/admin");
       router.refresh();
-    } catch {
-      setError("An unexpected error occurred");
+    } catch (err) {
+      if (err instanceof Error) {
+        // Firebase auth errors
+        if (err.message.includes("auth/invalid-credential")) {
+          setError("Invalid email or password");
+        } else if (err.message.includes("auth/user-not-found")) {
+          setError("User not found");
+        } else if (err.message.includes("auth/wrong-password")) {
+          setError("Invalid password");
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError("An unexpected error occurred");
+      }
     } finally {
       setIsLoading(false);
     }

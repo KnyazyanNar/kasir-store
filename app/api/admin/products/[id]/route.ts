@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getProductById } from "@/lib/data/getProductById";
-import { checkIsAdmin } from "@/lib/supabase/admin";
+import { checkIsAdmin } from "@/lib/auth/requireAdmin";
 
 export async function GET(
   request: Request,

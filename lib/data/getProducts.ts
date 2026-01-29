@@ -1,101 +1,137 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin-client";
-import type { Product, ProductVariant, ProductImage, ProductWithVariants } from "@/lib/types/product";
+import { db } from "@/lib/firebase-admin";
+import { logError } from "@/lib/logger";
+
+export type Product = {
+  id: string;
+  name: string;
+  price: number;
+  images: string[];
+  is_active: boolean;
+};
+
+export type ProductVariant = {
+  size: string;
+  stock: number;
+};
+
+export type ProductWithVariants = Product & {
+  variants: ProductVariant[];
+};
 
 /**
  * Fetch all active products for the storefront.
- * Uses regular client (respects RLS).
  */
 export async function getProducts(): Promise<Product[]> {
-  const supabase = await createSupabaseServerClient();
+  try {
+    const productsRef = db.collection("products");
+    const snapshot = await productsRef
+      .where("is_active", "==", true)
+      .get();
 
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching products:", error.message, error.code, error.details);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name,
+        price: data.price,
+        images: data.images || [],
+        is_active: data.is_active,
+      };
+    });
+  } catch (error) {
+    logError("[products] Failed to fetch active products", error);
     return [];
   }
-
-  return data as Product[];
 }
 
 /**
  * Fetch all products for admin (including inactive).
- * Uses admin client (bypasses RLS).
  */
 export async function getAllProducts(): Promise<Product[]> {
-  const supabase = createSupabaseAdminClient();
+  try {
+    const productsRef = db.collection("products");
+    const snapshot = await productsRef.get();
 
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching all products:", error.message, error.code, error.details);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name,
+        price: data.price,
+        images: data.images || [],
+        is_active: data.is_active,
+      };
+    });
+  } catch (error) {
+    logError("[products] Failed to fetch all products", error);
     return [];
   }
-
-  return data as Product[];
 }
 
 /**
- * Fetch all active products with their variants and images for the storefront.
- * Uses regular client (respects RLS).
+ * Fetch variants for a product from product_variants collection.
  */
-export async function getProductsWithVariants(): Promise<ProductWithVariants[]> {
-  const supabase = await createSupabaseServerClient();
+async function getProductVariants(productId: string): Promise<ProductVariant[]> {
+  try {
+    const snapshot = await db
+      .collection("product_variants")
+      .where("product_id", "==", productId)
+      .get();
 
-  // Fetch all active products
-  const { data: products, error: productsError } = await supabase
-    .from("products")
-    .select("*")
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
-
-  if (productsError || !products || products.length === 0) {
-    if (productsError) {
-      console.error("Error fetching products:", productsError);
-    }
+    return snapshot.docs.map((doc) => ({
+      size: doc.data().size,
+      stock: doc.data().stock || 0,
+    }));
+  } catch (error) {
+    logError(`[products] Failed to fetch variants for product ${productId}`, error);
     return [];
   }
+}
 
-  const productIds = products.map((p) => p.id);
+/**
+ * Fetch all active products with their variants for the storefront.
+ */
+export async function getProductsWithVariants(): Promise<ProductWithVariants[]> {
+  try {
+    const products = await getProducts();
 
-  // Fetch all variants for these products
-  const { data: variants, error: variantsError } = await supabase
-    .from("product_variants")
-    .select("*")
-    .in("product_id", productIds)
-    .order("size");
+    const productsWithVariants = await Promise.all(
+      products.map(async (product) => {
+        const variants = await getProductVariants(product.id);
+        return {
+          ...product,
+          variants,
+        };
+      })
+    );
 
-  if (variantsError) {
-    console.error("Error fetching variants:", variantsError);
+    return productsWithVariants;
+  } catch (error) {
+    logError("[products] Failed to fetch products with variants", error);
+    return [];
   }
+}
 
-  // Fetch all images for these products
-  const { data: images, error: imagesError } = await supabase
-    .from("product_images")
-    .select("*")
-    .in("product_id", productIds)
-    .order("position", { ascending: true });
+/**
+ * Fetch all products with variants for admin (including inactive).
+ */
+export async function getAllProductsWithVariants(): Promise<ProductWithVariants[]> {
+  try {
+    const products = await getAllProducts();
 
-  if (imagesError) {
-    console.error("Error fetching images:", imagesError);
+    const productsWithVariants = await Promise.all(
+      products.map(async (product) => {
+        const variants = await getProductVariants(product.id);
+        return {
+          ...product,
+          variants,
+        };
+      })
+    );
+
+    return productsWithVariants;
+  } catch (error) {
+    logError("[products] Failed to fetch all products with variants", error);
+    return [];
   }
-
-  // Map variants and images to their products
-  return products.map((product) => ({
-    ...(product as Product),
-    variants: ((variants as ProductVariant[]) || []).filter(
-      (v) => v.product_id === product.id
-    ),
-    images: ((images as ProductImage[]) || []).filter(
-      (img) => img.product_id === product.id
-    ),
-  }));
 }

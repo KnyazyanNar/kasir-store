@@ -1,16 +1,31 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { getSupabaseClient } from "@/lib/supabase/client";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase-client";
+import { logError } from "@/lib/logger";
 
 export function LogoutButton() {
   const router = useRouter();
 
   async function handleLogout() {
-    const supabase = getSupabaseClient();
-    await supabase.auth.signOut();
-    router.push("/admin-login");
-    router.refresh();
+    try {
+      // Sign out from Firebase client
+      await signOut(auth);
+
+      // Clear session cookie via API
+      await fetch("/api/auth/session", {
+        method: "DELETE",
+      });
+
+      router.push("/admin-login");
+      router.refresh();
+    } catch (error) {
+      logError("[auth] Logout failed", error);
+      // Still redirect even if there's an error
+      router.push("/admin-login");
+      router.refresh();
+    }
   }
 
   return (

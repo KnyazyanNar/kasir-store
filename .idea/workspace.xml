@@ -5,18 +5,57 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4fc68af3-b109-4840-8c5d-c7fa682e03b6" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/admin-login/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin-login/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/admin/components/LogoutButton.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/components/LogoutButton.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/admin/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/admin/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/admin/products/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/products/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/admin/products/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/products/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/admin/products/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/products/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/api/admin/products/[id]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/admin/products/[id]/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/api/checkout/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/checkout/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/cart/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/cart/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/components/CartIndicator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/CartIndicator.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/components/HomeClient.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/HomeClient.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/components/ProductCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/ProductCard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/components/ProductSection.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/ProductSection.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/contexts/CartContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/contexts/CartContext.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/success/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/success/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/actions/products.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/actions/products.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/auth/requireAdmin.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/auth/requireAdmin.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/data/getProductById.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/data/getProductById.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/data/getProducts.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/data/getProducts.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/supabase/admin-client.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/supabase/admin.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/supabase/client.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/supabase/server.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/types/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/types/product.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/types/profile.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/middleware.ts" beforeDir="false" afterPath="$PROJECT_DIR$/middleware.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/supabase/migrations/001_initial_schema.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/supabase/migrations/002_product_images.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="70" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 2
@@ -26,25 +65,33 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
-    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/arpinealeksanyan/Desktop/kasir-store&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/arpinealeksanyan/Desktop/kasir-store/node_modules/typescript/lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "js.debugger.nextJs.config.created.client": "true",
+    "js.debugger.nextJs.config.created.server": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "/Users/arpinealeksanyan/Desktop/kasir-store",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "/Users/arpinealeksanyan/Desktop/kasir-store/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
+  <component name="RecapUselessUpdatesCounter">
+    <option name="suspendCountdown" value="8" />
+  </component>
   <component name="RunManager" selected="npm.Next.js: server-side">
     <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:3000/">
       <method v="2" />
@@ -63,7 +110,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-WS-252.27397.92" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.30387.83" />
       </set>
     </attachedChunks>
   </component>
@@ -76,10 +123,22 @@
       <updated>1769445592181</updated>
       <workItem from="1769445593705" duration="3123000" />
       <workItem from="1769450212907" duration="5386000" />
+      <workItem from="1769467042365" duration="4835000" />
+      <workItem from="1769533710325" duration="10350000" />
+      <workItem from="1769609344516" duration="597000" />
+      <workItem from="1769710596843" duration="5540000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
   </component>
 </project>

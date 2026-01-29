@@ -49,7 +49,43 @@ export default async function AdminDashboard() {
         {products.length === 0 ? (
           <p className="text-white/50">No products yet. Create your first product!</p>
         ) : (
-          <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
+          <>
+          {/* Mobile: card layout */}
+          <div className="md:hidden space-y-3">
+            {products.slice(0, 5).map((product) => (
+              <div
+                key={product.id}
+                className="bg-white/5 rounded-xl border border-white/10 p-4 flex items-center justify-between gap-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{product.name}</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-sm text-white/60">
+                      ${(product.price / 100).toFixed(2)}
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${
+                        product.is_active
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-red-500/20 text-red-400"
+                      }`}
+                    >
+                      {product.is_active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                </div>
+                <Link
+                  href={`/admin/products/${product.id}`}
+                  className="shrink-0 text-sm text-white/70 hover:text-white transition-colors px-3 py-1.5 bg-white/10 rounded-lg"
+                >
+                  Edit
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table layout */}
+          <div className="hidden md:block bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/10">
@@ -96,6 +132,7 @@ export default async function AdminDashboard() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>
